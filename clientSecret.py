@@ -15,17 +15,25 @@ from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 import pyotp
 from datetime import datetime
+import os
+from dotenv import load_dotenv
+
+# Charger les variables d'environnement
+load_dotenv()
 
 # Constantes
-EXCEL_FILE_PATH = "/Users/aymaneazouagh/Documents/Etail/Script_client_SectretKey/listAccount_sorted.xlsx"
-REPORT_PATH_TEMPLATE = "/Users/aymaneazouagh/Documents/Etail/Script_client_SectretKey/Secret key reports/report_{}.xlsx"
-OTPAUTH_URL = "otpauth://totp/Amazon%3Adev%40etail-agency.com?secret=N6ROBUP7P2YHKZQOVKJDB3YLCSVCUMWOHSR2PZOQPLOAMFB37ASQ&issuer=Amazon"
+EXCEL_FILE_PATH = os.getenv('EXCEL_FILE_PATH')
+REPORT_PATH_TEMPLATE = os.path.join(os.getenv('REPORT_PATH'), 'report_{}.xlsx')
+AMAZON_EMAIL = os.getenv('AMAZON_EMAIL')
+AMAZON_PASSWORD = os.getenv('AMAZON_PASSWORD')
+AMAZON_OTP_SECRET = os.getenv('AMAZON_OTP_SECRET')
 
 # Configuration du logging
 logging.basicConfig(level=logging.INFO)
 INFO = logging.info
 ERROR = logging.error
 WARNING = logging.WARNING
+
 def read_accounts_from_excel(file_path):
     """Lire les comptes et IDs depuis le fichier Excel."""
     try:
@@ -59,16 +67,16 @@ def login_to_amazon(driver):
         # Saisir le nom d'utilisateur
         username = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, 'ap_email')))
         username.clear()
-        username.send_keys('dev@etail-agency.com')
+        username.send_keys(AMAZON_EMAIL)
         driver.find_element(By.ID, 'continue').click()
 
         # Saisir le mot de passe
         password = driver.find_element(By.ID, 'ap_password')
-        password.send_keys('9Iw^rlbW!zTnlAEKT#V')
+        password.send_keys(AMAZON_PASSWORD)
         driver.find_element(By.ID, 'signInSubmit').click()
 
         # Saisir le code OTP
-        otp_code = pyotp.TOTP("N6ROBUP7P2YHKZQOVKJDB3YLCSVCUMWOHSR2PZOQPLOAMFB37ASQ").now()
+        otp_code = pyotp.TOTP(AMAZON_OTP_SECRET).now()
         code = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, 'auth-mfa-otpcode')))
         code.send_keys(otp_code)
         driver.find_element(By.ID, 'auth-signin-button').click()
@@ -118,6 +126,7 @@ def select_client_account(driver, account_name):
         INFO(f"Account {account_name} selected and submitted successfully.")
     except Exception as e:
         ERROR(f"Error selecting account {account_name}: {e}")
+
 def check_developer_profile_alert(driver):
     """Vérifiez si une alerte de profil développeur est présente sur la page."""
     try:
@@ -127,7 +136,6 @@ def check_developer_profile_alert(driver):
         return True if alert_element else False
     except (NoSuchElementException, TimeoutException):
         return False
-
 
 def close_modal_if_open(driver):
     try:
@@ -140,6 +148,7 @@ def close_modal_if_open(driver):
             time.sleep(2)  # Attendre que le modal se ferme avant de cliquer à nouveau
     except Exception as e:
         logging.warning(f"Erreur lors de la fermeture du modal: {e}")
+
 def find_application_by_client_id(driver, client_id):
     try:
         driver.get('https://vendorcentral.amazon.fr/sellingpartner/developerconsole?ref_=vc_xx_subNav')
@@ -191,7 +200,6 @@ def find_application_by_client_id(driver, client_id):
         logging.error(f"Erreur lors de la recherche du ClientID: {e}")
         return False
 
-
 def click_view_button(driver, account_name, report_data):
     try:
         driver.get('https://vendorcentral.amazon.fr/sellingpartner/developerconsole?ref_=vc_xx_subNav')
@@ -211,7 +219,6 @@ def click_view_button(driver, account_name, report_data):
 
     except Exception as e:
         logging.error(f"An error occurred while clicking view link: {e}")
-
 
 def click_arrow(driver):
     """Click on the arrow to display the secret key."""
@@ -286,8 +293,6 @@ def extract_secret_key_and_expiration(driver):
         logging.error(f"Error extracting client secret and expiration: {str(e)}")
         return None, None  # Retourner None si une erreur se produit
 
-
-
 def renew_secret_and_extract(driver, account_name, report_data):
     """Renew the secret and extract the new secret and expiration date."""
     try:
@@ -352,9 +357,7 @@ def renew_secret_and_extract(driver, account_name, report_data):
         logging.error(f"Error during secret renewal: {e}")
         return None, None
 
-
 def create_report(report_data):
-
     """Create an Excel report and return the filename."""
     current_time = datetime.now().strftime('%Y%m%d_%H%M%S')
     report_filename = REPORT_PATH_TEMPLATE.format(current_time)
@@ -473,7 +476,6 @@ def main():
     finally:
         # Fermer le driver
         driver.quit()
-
 
 if __name__ == "__main__":
     main()
