@@ -1,0 +1,38 @@
+# Fichiers d'environnement
+.env
+.env.local
+.env.*.local
+
+# Fichiers Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Fichiers Excel
+*.xlsx
+!listAccount_sorted.xlsx.example
+
+# Fichiers de rapports
+Secret key reports/
+
+# Fichiers système
+.DS_Store
+Thumbs.db 
